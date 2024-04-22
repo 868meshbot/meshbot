@@ -140,7 +140,7 @@ def message_listener(packet, interface):
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 11 and packet["to"] == MYNODE:
+        if transmission_count < 11:
             if "weather" in message:
                 # weather_info = weather_fetcher.get_weather()
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
