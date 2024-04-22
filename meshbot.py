@@ -152,7 +152,7 @@ def message_listener(packet, interface):
             elif "#test" in message:
                 interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
                 transmission_count += 1
-            elif "#kill_all_robots":
+            elif "#kill_all_robots" in message:
                 if kill_all_robots == 0:
                     interface.sendText(
                         "Confirm", wantAck=False, destinationId=sender_id
