@@ -40,6 +40,7 @@ import argparse
 import logging
 import threading
 import time
+from pathlib import Path
 
 import requests
 
@@ -54,6 +55,7 @@ except ImportError:
 import serial.tools.list_ports
 
 from modules.tides import TidesScraper
+from modules.whois import Whois
 from modules.wttr import WeatherFetcher
 
 
@@ -93,6 +95,7 @@ tides_scraper = TidesScraper(TIDE_LOCATION)
 transmission_count = 0
 cooldown = False
 kill_all_robots = 0  # Assuming you missed defining kill_all_robots
+dbfilename = ""
 
 
 # Function to periodically refresh weather and tides data
@@ -110,7 +113,7 @@ def reset_transmission_count():
     transmission_count -= 1
     if transmission_count < 0:
         transmission_count = 0
-    logger.info("Reducing transmission count {transmission_count}")
+    logger.info(f"Reducing transmission count {transmission_count}")
     threading.Timer(180.0, reset_transmission_count).start()
 
 
@@ -135,23 +138,88 @@ def message_listener(packet, interface):
     global kill_all_robots
     global weather_info
     global tides_info
+    global dbfilename
+
     if packet is not None and packet["decoded"].get("portnum") == "TEXT_MESSAGE_APP":
         message = packet["decoded"]["text"].lower()
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 11:
+        if transmission_count < 11:  # and packet["to"] == MYNODE:
             if "weather" in message:
-                # weather_info = weather_fetcher.get_weather()
+                transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
-                transmission_count += 1
             elif "tides" in message:
-                # tides_info = tides_scraper.get_tides()
+                transmission_count += 1
                 interface.sendText(tides_info, wantAck=True, destinationId=sender_id)
-                transmission_count += 1
             elif "#test" in message:
-                interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
                 transmission_count += 1
+                interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
+            elif "#whois #" in message:
+                message_parts = message.split("#")
+                if len(message_parts) > 1:
+                    whois_search = Whois(dbfilename)
+                    logger.info(
+                        f"Querying whois DB {dbfilename} for: {message_parts[2].strip()}"
+                    )
+                    try:
+                        if (
+                            type(int(message_parts[2].strip(), 16)) == int
+                            or type(int(message_parts[2].strip().upper(), 16)) == int
+                        ):
+                            result = whois_search.search_nodes(message_parts[2].strip())
+
+                            if result:
+                                node_id, long_name, short_name = result
+                                whois_data = f"ID:{node_id}\n"
+                                whois_data += f"Long Name: {long_name}\n"
+                                whois_data += f"Short Name: {short_name}"
+                                logger.info(f"Data: {whois_data}")
+                                interface.sendText(
+                                    f"{whois_data}",
+                                    wantAck=False,
+                                    destinationId=sender_id,
+                                )
+                            else:
+                                interface.sendText(
+                                    "No matching record found.",
+                                    wantAck=False,
+                                    destinationId=sender_id,
+                                )
+                    except:
+                        logger.error("Not a hex string aborting!")
+                        pass
+                    if type(message_parts[2].strip()) == str:
+                        result = whois_search.search_nodes_sn(message_parts[2].strip())
+
+                        if result:
+                            node_id, long_name, short_name = result
+                            whois_data = f"ID:{node_id}\n"
+                            whois_data += f"Long Name: {long_name}\n"
+                            whois_data += f"Short Name: {short_name}"
+                            logger.info(f"Data: {whois_data}")
+                            interface.sendText(
+                                f"{whois_data}", wantAck=False, destinationId=sender_id
+                            )
+                        else:
+                            interface.sendText(
+                                "No matching record found.",
+                                wantAck=False,
+                                destinationId=sender_id,
+                            )
+                        transmission_count += 1
+
+                    else:
+                        interface.sendText(
+                            "No matching record found.",
+                            wantAck=False,
+                            destinationId=sender_id,
+                        )
+                        transmission_count += 1
+
+                    whois_search.close_connection()
+                else:
+                    pass
             elif "#kill_all_robots" in message:
                 if kill_all_robots == 0:
                     interface.sendText(
@@ -161,7 +229,7 @@ def message_listener(packet, interface):
                     kill_all_robots += 1
                 if kill_all_robots > 0:
                     interface.sendText(
-                        "Deactivating all reachable bots... SECRET_SHUTDOWN_STRING",
+                        "💣 Deactivating all reachable bots... SECRET_SHUTDOWN_STRING",
                         wantAck=False,
                     )
                     transmission_count += 2
@@ -188,8 +256,12 @@ def main():
     reset_transmission_count()
     reset_cooldown()
     reset_killallrobots()
+    cwd = Path.cwd()
+    global dbfilename
+
     parser = argparse.ArgumentParser(description="Meshbot a bot for Meshtastic devices")
     parser.add_argument("--port", type=str, help="Specify the serial port to probe")
+    parser.add_argument("--db", type=str, help="Specify DB: mpowered or liam")
 
     args = parser.parse_args()
 
@@ -206,7 +278,19 @@ def main():
             )
         else:
             logger.info("No serial ports found.")
-    logger.info("Press CTRL-C to terminate the program")
+
+    if args.db:
+        if args.db.lower() == "mpowered":
+            dbfilename = str(cwd) + "/db/nodes.db"
+            logger.info(f"Setting DB to mpowered data: {dbfilename}")
+        if args.db.lower() == "liam":
+            dbfilename = str(cwd) + "/db/nodes2.db"
+            logger.info(f"Setting DB to Liam Cottle data: {dbfilename}")
+    else:
+        dbfilename = str(cwd) + "/db/nodes.db"
+        logger.info("Default DB: {dbfilename}")
+
+    logger.info(f"Press CTRL-C x2 to terminate the program")
     interface = meshtastic.serial_interface.SerialInterface()
     pub.subscribe(message_listener, "meshtastic.receive")
 
@@ -217,7 +301,8 @@ def main():
 
     # Keep the main thread alive
     while True:
-        time.sleep(1)
+        # time.sleep(1)
+        continue
 
 
 if __name__ == "__main__":

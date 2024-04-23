@@ -7,6 +7,7 @@ MeshBot is a Python program designed to run on Meshtastic devices, allowing user
 - Broadcast messages: Send text broadcasts to all devices on the mesh network.
 - Weather updates: Get real-time weather updates for a specified location.
 - Tides information: Receive tidal information for coastal areas.
+- Whois: Query one of two User databases mpowered or liam
 
 ## Requirements
 
@@ -23,13 +24,27 @@ MeshBot is a Python program designed to run on Meshtastic devices, allowing user
 git clone https://github.com/868meshbot/meshbot.git
 ```
 
-2. Install the required dependencies:
+2. Navigate into the folder and setup a virtual environment
+
+```
+cd meshbot
+python3 -m venv .venv
+. .venv/bin/activate
+
+```
+
+3. Install the required dependencies:
 
 ```
 pip install -r requirements.txt
 ```
 
-3. Connect your Meshtastic device to your computer via USB.
+4. Connect your Meshtastic device to your computer via USB and run the program
+
+```
+python ./mesbot.py
+
+```
 
 ## Usage
 
@@ -52,3 +67,7 @@ This project utilizes the Meshtastic Python library, which provides communicatio
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## References
+
+Database of IDs, long_name and short_names obtained from the node list from the following URLs: -[https://map.mpowered247.com/](https://map.mpowered247.com/) -[https://meshtastic.liamcottle.net/](https://meshtastic.liamcottle.net/)
