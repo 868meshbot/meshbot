@@ -2,7 +2,7 @@
 
 ![Meshbot](./img/meshbot.png)
 
-MeshBot is a Python program designed to run on Meshtastic devices, allowing users to send and receive messages efficiently over a mesh network.
+MeshBot is an OpenSource Python program designed to run on computers with a connected Meshtastic device, allowing users to send and receive messages efficiently over a mesh network.
 
 ## Features
 
