@@ -86,7 +86,7 @@ except:
 TIDE_LOCATION = "Swansea"
 
 # CHANGE ME TO YOUR NODE ID
-MYNODE = "3662956904"
+MYNODE = "3663493700"
 
 # Global variables for weather and tides data
 weather_fetcher = WeatherFetcher(LOCATION)
@@ -121,7 +121,7 @@ def reset_cooldown():
     global cooldown
     cooldown = False
     logger.info("Cooldown Disabled.")
-    threading.Timer(120.0, reset_cooldown).start()
+    threading.Timer(240.0, reset_cooldown).start()
 
 
 def reset_killallrobots():
@@ -145,7 +145,7 @@ def message_listener(packet, interface):
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 11:  # and packet["to"] == MYNODE:
+        if transmission_count < 11:
             if "weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
@@ -157,6 +157,7 @@ def message_listener(packet, interface):
                 interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
             elif "#whois #" in message:
                 message_parts = message.split("#")
+                transmission_count += 1
                 if len(message_parts) > 1:
                     whois_search = Whois(dbfilename)
                     logger.info(
@@ -207,7 +208,6 @@ def message_listener(packet, interface):
                                 wantAck=False,
                                 destinationId=sender_id,
                             )
-                        transmission_count += 1
 
                     else:
                         interface.sendText(
@@ -215,24 +215,23 @@ def message_listener(packet, interface):
                             wantAck=False,
                             destinationId=sender_id,
                         )
-                        transmission_count += 1
 
                     whois_search.close_connection()
                 else:
                     pass
             elif "#kill_all_robots" in message:
+                transmission_count += 1
                 if kill_all_robots == 0:
                     interface.sendText(
                         "Confirm", wantAck=False, destinationId=sender_id
                     )
-                    transmission_count += 1
                     kill_all_robots += 1
                 if kill_all_robots > 0:
                     interface.sendText(
                         "💣 Deactivating all reachable bots... SECRET_SHUTDOWN_STRING",
                         wantAck=False,
                     )
-                    transmission_count += 2
+                    transmission_count += 1
                     kill_all_robots = 0
         if transmission_count >= 11:
             if not cooldown:
