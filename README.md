@@ -50,13 +50,37 @@ python ./mesbot.py
 
 ## Usage
 
-1. Run the MeshBot program:
+Run the MeshBot program:
 
 ```
 python meshbot.py --help
 ```
 
-2. Follow the on-screen instructions to interact with the program.
+Example on Linux:
+
+```
+python meshbot.py --port /dev/ttyUSB0
+```
+
+Example on OSX:
+
+```
+python meshbot.py --port /dev/cu.usbserial-0001
+```
+
+Example on Windows:
+
+```
+python meshbot.py --port COM7
+```
+
+## Bot interaction
+
+You bot will be accessible through the meshtastic mesh network through the node name.  DM the bot/node and issue any of the following commands:
+ - #test : receive a test message
+ - #weather : local weather report
+ - #tides : tide info (dont forget to change the default town in the source)
+ - #whois #xxxx : retrieve name and node info for a node based on last 4 chars of address
 
 ## Contributors
 
@@ -72,4 +96,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## References
 
-Database of IDs, long_name and short_names obtained from the node list from the following URLs: -[https://map.mpowered247.com/](https://map.mpowered247.com/) -[https://meshtastic.liamcottle.net/](https://meshtastic.liamcottle.net/)
+Database of IDs, long_name and short_names obtained from the node list from the following URLs: 
+
+ - [https://map.mpowered247.com/](https://map.mpowered247.com/) 
+ - [https://meshtastic.liamcottle.net/](https://meshtastic.liamcottle.net/)
