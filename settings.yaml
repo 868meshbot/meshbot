@@ -1,0 +1,7 @@
+---
+LOCATION: "Swansea"
+TIDE_LOCATION: "Swansea"
+MYNODE: "3663493700"
+MYNODES:
+  - "3663493700"
+DBFILENAME: "./db/nodes.db"
