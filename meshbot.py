@@ -6,8 +6,10 @@ MeshBot
 =======================
 
 meshbot.py: A message bot designed for Meshtastic, providing information from modules upon request:
-* weather and 
+* weather information 
 * tides information 
+* whois search
+* simple bbs
 
 Author:
 - Andy
@@ -43,17 +45,19 @@ import time
 from pathlib import Path
 
 import requests
+import yaml
 
 try:
     import meshtastic.serial_interface
     from pubsub import pub
 except ImportError:
     print(
-        "ERROR: Missing meshtastic library!\nYou can install it via pip:\npip install meshtastic"
+        "ERROR: Missing meshtastic library!\nYou can install it via pip:\npip install meshtastic\n"
     )
 
 import serial.tools.list_ports
 
+from modules.bbs import BBS
 from modules.tides import TidesScraper
 from modules.whois import Whois
 from modules.wttr import WeatherFetcher
@@ -70,32 +74,37 @@ def find_serial_ports():
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger()
 
 # GLOBALS
+LOCATION = ""
+TIDE_LOCATION = ""
+MYNODE = ""
+MYNODES = ""
+DBFILENAME = ""
+
+with open("settings.yaml", "r") as file:
+    settings = yaml.safe_load(file)
+
+LOCATION = settings.get("LOCATION")
+TIDE_LOCATION = settings.get("TIDE_LOCATION")
+MYNODE = settings.get("MYNODE")
+MYNODES = settings.get("MYNODES")
+DBFILENAME = settings.get("DBFILENAME")
 try:
     LOCATION = requests.get("https://ipinfo.io/city").text
     logger.info(f"Setting location to {LOCATION}")
 except:
     logger.warning("Could not calculate location.  Using defaults")
-    LOCATION = "Swansea"
 
-# CHANGE TO YOUR LOCAL COASTAL TOWN
-TIDE_LOCATION = "Swansea"
-
-# CHANGE ME TO YOUR NODE ID
-MYNODE = "3663493700"
-
-# Global variables for weather and tides data
 weather_fetcher = WeatherFetcher(LOCATION)
 tides_scraper = TidesScraper(TIDE_LOCATION)
-
+bbs = BBS()
 transmission_count = 0
 cooldown = False
 kill_all_robots = 0  # Assuming you missed defining kill_all_robots
-dbfilename = ""
 
 
 # Function to periodically refresh weather and tides data
@@ -138,14 +147,14 @@ def message_listener(packet, interface):
     global kill_all_robots
     global weather_info
     global tides_info
-    global dbfilename
+    global DBFILENAME
 
     if packet is not None and packet["decoded"].get("portnum") == "TEXT_MESSAGE_APP":
         message = packet["decoded"]["text"].lower()
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 11:
+        if transmission_count < 16:
             if "weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
@@ -159,9 +168,9 @@ def message_listener(packet, interface):
                 message_parts = message.split("#")
                 transmission_count += 1
                 if len(message_parts) > 1:
-                    whois_search = Whois(dbfilename)
+                    whois_search = Whois(DBFILENAME)
                     logger.info(
-                        f"Querying whois DB {dbfilename} for: {message_parts[2].strip()}"
+                        f"Querying whois DB {DBFILENAME} for: {message_parts[2].strip()}"
                     )
                     try:
                         if (
@@ -219,6 +228,29 @@ def message_listener(packet, interface):
                     whois_search.close_connection()
                 else:
                     pass
+            elif "#bbs" in message:
+                transmission_count += 1
+                message_parts = message.split()
+                if message_parts[1].lower() == "get":
+                    addy = hex(packet["from"]).replace("0x", "!")
+                    try:
+                        message = bbs.get_message(addy)
+                        bbs.delete_message(addy)
+                    except:
+                        message = "No new messages."
+                    logger.info(message)
+                    interface.sendText(
+                        message,
+                        wantAck=False,
+                        destinationId=sender_id,
+                    )
+
+                if message_parts[1].lower() == "post":
+                    content = " ".join(
+                        message_parts[3:]
+                    )  # Join the remaining parts as the message content
+                    content = content + " from: " + hex(packet["from"])
+                    bbs.post_message(message_parts[2], content)
             elif "#kill_all_robots" in message:
                 transmission_count += 1
                 if kill_all_robots == 0:
@@ -256,7 +288,7 @@ def main():
     reset_cooldown()
     reset_killallrobots()
     cwd = Path.cwd()
-    global dbfilename
+    global DBFILENAME
 
     parser = argparse.ArgumentParser(description="Meshbot a bot for Meshtastic devices")
     parser.add_argument("--port", type=str, help="Specify the serial port to probe")
@@ -280,14 +312,13 @@ def main():
 
     if args.db:
         if args.db.lower() == "mpowered":
-            dbfilename = str(cwd) + "/db/nodes.db"
-            logger.info(f"Setting DB to mpowered data: {dbfilename}")
+            DBFILENAME = str(cwd) + "/db/nodes.db"
+            logger.info(f"Setting DB to mpowered data: {DBFILENAME}")
         if args.db.lower() == "liam":
-            dbfilename = str(cwd) + "/db/nodes2.db"
-            logger.info(f"Setting DB to Liam Cottle data: {dbfilename}")
+            DBFILENAME = str(cwd) + "/db/nodes2.db"
+            logger.info(f"Setting DB to Liam Cottle data: {DBFILENAME}")
     else:
-        dbfilename = str(cwd) + "/db/nodes.db"
-        logger.info("Default DB: {dbfilename}")
+        logger.info(f"Default DB: {DBFILENAME}")
 
     logger.info(f"Press CTRL-C x2 to terminate the program")
     interface = meshtastic.serial_interface.SerialInterface()

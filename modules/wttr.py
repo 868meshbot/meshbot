@@ -52,7 +52,7 @@ class WeatherFetcher:
 
 
 # Example usage:
-location = "Swansea"
-weather_fetcher = WeatherFetcher(location)
-weather_data = weather_fetcher.get_weather()
-print(weather_data)
+#location = "Swansea"
+#weather_fetcher = WeatherFetcher(location)
+#weather_data = weather_fetcher.get_weather()
+#print(weather_data)
