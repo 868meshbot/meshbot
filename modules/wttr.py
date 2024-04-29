@@ -10,8 +10,8 @@ class WeatherFetcher:
         response = requests.get(url)
         if response.status_code == 200:
             response_text = response.text.replace("Partly ", "")
-            response_text = response_text.replace("Light", "")
-            response_text = response_text.replace("shower", "")
+            response_text = response_text.replace("Light ", "")
+            response_text = response_text.replace(" shower", "")
             weather_info = response_text.split()
             condition = weather_info[0].strip()
             temperature = weather_info[1].strip()
@@ -23,8 +23,14 @@ class WeatherFetcher:
                 "☁️": ["Cloudy", "Overcast", "cloudy"],
                 "🌤️": ["Partly", "Partly cloudy"],
                 "": ["Sunny", "Clear"],
-                "🌧️": ["Rain", "Lightrain", "Drizzle"],
-                "🌦️": ["Light shower rain", "Rain shower"],
+                "🌧️": [
+                    "Rain",
+                    "rain",
+                    "Light rain",
+                    "Drizzle",
+                    "Light shower rain",
+                    "Rain shower",
+                ],
                 "🌩️": ["Thunderstorm"],
                 "❄": ["Snow", "Light snow", "Light shower snow"],
                 "🌨️": ["Snow shower", "Shower snow"],
@@ -52,7 +58,7 @@ class WeatherFetcher:
 
 
 # Example usage:
-#location = "Swansea"
-#weather_fetcher = WeatherFetcher(location)
-#weather_data = weather_fetcher.get_weather()
-#print(weather_data)
+# location = "Swansea"
+# weather_fetcher = WeatherFetcher(location)
+# weather_data = weather_fetcher.get_weather()
+# print(weather_data)

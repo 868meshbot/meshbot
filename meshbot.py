@@ -93,11 +93,11 @@ TIDE_LOCATION = settings.get("TIDE_LOCATION")
 MYNODE = settings.get("MYNODE")
 MYNODES = settings.get("MYNODES")
 DBFILENAME = settings.get("DBFILENAME")
-try:
-    LOCATION = requests.get("https://ipinfo.io/city").text
-    logger.info(f"Setting location to {LOCATION}")
-except:
-    logger.warning("Could not calculate location.  Using defaults")
+#try:
+#    LOCATION = requests.get("https://ipinfo.io/city").text
+#    logger.info(f"Setting location to {LOCATION}")
+#except:
+#    logger.warning("Could not calculate location.  Using defaults")
 
 weather_fetcher = WeatherFetcher(LOCATION)
 tides_scraper = TidesScraper(TIDE_LOCATION)
@@ -154,7 +154,7 @@ def message_listener(packet, interface):
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 16:
+        if transmission_count < 16 and str(packet['to'])==MYNODE and any(node in str(packet["from"]) for node in MYNODES):
             if "weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
@@ -167,6 +167,7 @@ def message_listener(packet, interface):
             elif "#whois #" in message:
                 message_parts = message.split("#")
                 transmission_count += 1
+                lookup_complete = False
                 if len(message_parts) > 1:
                     whois_search = Whois(DBFILENAME)
                     logger.info(
@@ -196,10 +197,14 @@ def message_listener(packet, interface):
                                     wantAck=False,
                                     destinationId=sender_id,
                                 )
+                                lookup_complete = True
                     except:
                         logger.error("Not a hex string aborting!")
                         pass
-                    if type(message_parts[2].strip()) == str:
+                    if (
+                        type(message_parts[2].strip()) == str
+                        and lookup_complete == False
+                    ):
                         result = whois_search.search_nodes_sn(message_parts[2].strip())
 
                         if result:
