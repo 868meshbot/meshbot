@@ -93,10 +93,10 @@ TIDE_LOCATION = settings.get("TIDE_LOCATION")
 MYNODE = settings.get("MYNODE")
 MYNODES = settings.get("MYNODES")
 DBFILENAME = settings.get("DBFILENAME")
-#try:
+# try:
 #    LOCATION = requests.get("https://ipinfo.io/city").text
 #    logger.info(f"Setting location to {LOCATION}")
-#except:
+# except:
 #    logger.warning("Could not calculate location.  Using defaults")
 
 weather_fetcher = WeatherFetcher(LOCATION)
@@ -154,7 +154,11 @@ def message_listener(packet, interface):
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
-        if transmission_count < 16 and str(packet['to'])==MYNODE and any(node in str(packet["from"]) for node in MYNODES):
+        if (
+            transmission_count < 16
+            and str(packet["to"]) == MYNODE
+            and any(node in str(packet["from"]) for node in MYNODES)
+        ):
             if "weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
@@ -254,7 +258,15 @@ def message_listener(packet, interface):
                     content = " ".join(
                         message_parts[3:]
                     )  # Join the remaining parts as the message content
-                    content = content + " from: " + hex(packet["from"])
+                    whois_search = Whois(DBFILENAME)
+                    result = whois_search.search_nodes(
+                        hex(packet["from"]).replace("0x", "")
+                    )
+                    if result:
+                        node_id, long_name, short_name = result
+                    else:
+                        short_name = hex(packet["from"])
+                    content = content + " from: " + short_name
                     bbs.post_message(message_parts[2], content)
             elif "#kill_all_robots" in message:
                 transmission_count += 1
@@ -263,7 +275,7 @@ def message_listener(packet, interface):
                         "Confirm", wantAck=False, destinationId=sender_id
                     )
                     kill_all_robots += 1
-                if kill_all_robots > 0:
+                if kill_all_robots > 1:
                     interface.sendText(
                         "💣 Deactivating all reachable bots... SECRET_SHUTDOWN_STRING",
                         wantAck=False,
