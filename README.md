@@ -45,7 +45,7 @@ pip install -r requirements.txt
 4. Connect your Meshtastic device to your computer via USB and run the program
 
 ```
-python ./mesbot.py
+python ./meshbot.py
 
 ```
 
@@ -62,7 +62,10 @@ TIDE_LOCATION: "Swansea"
 MYNODE: "3663493700"
 MYNODES:
   - "3663493700"
+  - "1234567890"
 DBFILENAME: "./db/nodes.db"
+DM_MODE: True
+FIREWALL: True
 ```
 
 Description
@@ -71,6 +74,8 @@ Description
 - MYNODE = The hw address of the node connected in int/number form. This is so the bot only responds to DMs
 - MYNODES = A list of nodes (in int/number form) that are permitted to interact with the bot
 - DBFILENAME = Configure which user database file to use by default
+- DM_MODE = True: Only respond to DMs; False: responds to all traffic
+- FIREWALL = True: Only respond to MYNODES; False: responds to all traffic
 
 ## Usage
 
@@ -106,7 +111,8 @@ You bot will be accessible through the meshtastic mesh network through the node 
 - #weather : local weather report
 - #tides : tide info (dont forget to change the default town in the source)
 - #whois #xxxx : retrieve name and node info for a node based on last 4 chars of address
-- #bbs post !address message : post a messgae on the bbs for a given user at !address
+- #bbs any : do I have any messages?
+- #bbs post !address message : post a message on the bbs for a given user at !address
 - #bbs get : retrieve your message(s) left by another user(s)
 
 ## Contributors
