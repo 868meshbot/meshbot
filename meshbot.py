@@ -40,6 +40,7 @@ SOFTWARE.
 
 import argparse
 import logging
+import secrets
 import threading
 import time
 from pathlib import Path
@@ -84,6 +85,8 @@ TIDE_LOCATION = ""
 MYNODE = ""
 MYNODES = ""
 DBFILENAME = ""
+DM_MODE = ""
+FIREWALL = ""
 
 with open("settings.yaml", "r") as file:
     settings = yaml.safe_load(file)
@@ -93,6 +96,11 @@ TIDE_LOCATION = settings.get("TIDE_LOCATION")
 MYNODE = settings.get("MYNODE")
 MYNODES = settings.get("MYNODES")
 DBFILENAME = settings.get("DBFILENAME")
+DM_MODE = settings.get("DM_MODE")
+FIREWALL = settings.get("FIREWALL")
+
+logger.info(f"DM_MODE: {DM_MODE}")
+logger.info(f"FIREWALL: {FIREWALL}")
 # try:
 #    LOCATION = requests.get("https://ipinfo.io/city").text
 #    logger.info(f"Setting location to {LOCATION}")
@@ -148,6 +156,8 @@ def message_listener(packet, interface):
     global weather_info
     global tides_info
     global DBFILENAME
+    global DM_MODE
+    global FIREWALL
 
     if packet is not None and packet["decoded"].get("portnum") == "TEXT_MESSAGE_APP":
         message = packet["decoded"]["text"].lower()
@@ -156,13 +166,52 @@ def message_listener(packet, interface):
         logger.info(f"transmission count {transmission_count}")
         if (
             transmission_count < 16
-            and str(packet["to"]) == MYNODE
-            and any(node in str(packet["from"]) for node in MYNODES)
+            and (DM_MODE == 0 or str(packet["to"]) == MYNODE)
+            and (FIREWALL == 0 or any(node in str(packet["from"]) for node in MYNODES))
         ):
-            if "weather" in message:
+            if "#fw" in message:
+                message_parts = message.split(" ")
+                if len(message_parts) > 1:
+                    if message_parts[1].lower() == "off":
+                        FIREWALL = False
+                        logger.info("FIREWALL=False")
+                    else:
+                        FIREWALL = True
+                        logger.info("FIREWALL=True")
+                else:
+                    FIREWALL = True
+                    logger.info("FIREWALL=True")
+            elif "#dm" in message:
+                message_parts = message.split(" ")
+                if len(message_parts) > 1:
+                    if message_parts[1].lower() == "off":
+                        DM_MODE = False
+                        logger.info("DM_MODE=False")
+                    else:
+                        DM_MODE = True
+                        logger.info("DM_MODE=True")
+                else:
+                    DM_MODE = True
+                    logger.info("DM_MODE=True")
+
+            elif "#flipcoin" in message:
+                transmission_count += 1
+                interface.sendText(
+                    secrets.choice(["Heads", "Tails"]),
+                    wantAck=True,
+                    destinationId=sender_id,
+                )
+            elif "#random" in message:
+                transmission_count += 1
+                interface.sendText(
+                    str(secrets.randbelow(10) + 1),
+                    wantAck=True,
+                    destinationId=sender_id,
+                )
+            elif "#weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
-            elif "tides" in message:
+            elif "#tides" in message:
                 transmission_count += 1
                 interface.sendText(tides_info, wantAck=True, destinationId=sender_id)
             elif "#test" in message:
@@ -239,9 +288,22 @@ def message_listener(packet, interface):
                     pass
             elif "#bbs" in message:
                 transmission_count += 1
+                count = 0
                 message_parts = message.split()
+                addy = hex(packet["from"]).replace("0x", "!")
+                if message_parts[1].lower() == "any":
+                    try:
+                        count = bbs.count_messages(addy)
+                        logger.info(f"{count} messages found")
+                    except ValueError as e:
+                        message = "No new messages."
+                        logger.error(f"bbs count messages error: {e}")
+                    if count:
+                        message = "You have " + str(count) + " messages."
+                        interface.sendText(
+                            message, wantAck=True, destinationId=sender_id
+                        )
                 if message_parts[1].lower() == "get":
-                    addy = hex(packet["from"]).replace("0x", "!")
                     try:
                         message = bbs.get_message(addy)
                         bbs.delete_message(addy)
@@ -315,6 +377,7 @@ def main():
 
     if args.port:
         serial_ports = [args.port]
+        logger.info(f"Serial port {serial_ports}\n")
     else:
         serial_ports = find_serial_ports()
         if serial_ports:
@@ -326,6 +389,7 @@ def main():
             )
         else:
             logger.info("No serial ports found.")
+        exit(0)
 
     if args.db:
         if args.db.lower() == "mpowered":
@@ -338,7 +402,7 @@ def main():
         logger.info(f"Default DB: {DBFILENAME}")
 
     logger.info(f"Press CTRL-C x2 to terminate the program")
-    interface = meshtastic.serial_interface.SerialInterface()
+    interface = meshtastic.serial_interface.SerialInterface(serial_ports[0])
     pub.subscribe(message_listener, "meshtastic.receive")
 
     # Start a separate thread for refreshing data periodically

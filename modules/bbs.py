@@ -1,28 +1,31 @@
 class BBS:
     def __init__(self):
-        self.messages = {}
+        self.messages = []  # Initialize message queue as an empty list
 
     def post_message(self, message_id, content):
         """
         Post a message to the BBS.
         """
-        if message_id in self.messages:
-            raise ValueError("Message ID already exists")
-        self.messages[message_id] = content
+        self.messages.append((message_id, content))  # Append the message ID and content tuple
 
     def get_message(self, message_id):
         """
         Get a message from the BBS.
         """
-        return self.messages.get(message_id, None)
+        messages = [msg for msg in self.messages if msg[0] == message_id]
+        return messages
 
     def delete_message(self, message_id):
         """
         Delete a message from the BBS.
         """
-        if message_id not in self.messages:
-            raise ValueError("Message ID does not exist")
-        del self.messages[message_id]
+        self.messages = [msg for msg in self.messages if msg[0] != message_id]
+
+    def count_messages(self, message_id):
+        """
+        Count the number of messages for a given message ID.
+        """
+        return sum(1 for msg in self.messages if msg[0] == message_id)
 
 # Example usage
 #bbs = BBS()
