@@ -298,23 +298,33 @@ def message_listener(packet, interface):
                     except ValueError as e:
                         message = "No new messages."
                         logger.error(f"bbs count messages error: {e}")
-                    if count:
+                    if count >= 0:
                         message = "You have " + str(count) + " messages."
                         interface.sendText(
                             message, wantAck=True, destinationId=sender_id
                         )
                 if message_parts[1].lower() == "get":
                     try:
-                        message = bbs.get_message(addy)
-                        bbs.delete_message(addy)
-                    except:
-                        message = "No new messages."
-                    logger.info(message)
-                    interface.sendText(
-                        message,
-                        wantAck=False,
-                        destinationId=sender_id,
-                    )
+                        messages = bbs.get_message(addy)
+                        if messages:
+                            for user, message in messages:
+                                logger.info(f"Message for {user}: {message}")
+                                interface.sendText(
+                                    message,
+                                    wantAck=False,
+                                    destinationId=sender_id,
+                                )
+                            bbs.delete_message(addy)
+                        else:
+                            message = "No new messages."
+                            logger.info("No new messages")
+                            interface.sendText(
+                                message,
+                                wantAck=False,
+                                destinationId=sender_id,
+                            )
+                    except Exception as e:
+                        logger.error(f"Error: {e}")
 
                 if message_parts[1].lower() == "post":
                     content = " ".join(
@@ -328,7 +338,14 @@ def message_listener(packet, interface):
                         node_id, long_name, short_name = result
                     else:
                         short_name = hex(packet["from"])
-                    content = content + " from: " + short_name
+                    content = (
+                        content
+                        + ". From: "
+                        + short_name
+                        + "("
+                        + str(hex(packet["from"])).replace("0x", "!")
+                        + ")"
+                    )
                     bbs.post_message(message_parts[2], content)
             elif "#kill_all_robots" in message:
                 transmission_count += 1
