@@ -60,6 +60,7 @@ import serial.tools.list_ports
 
 from modules.bbs import BBS
 from modules.tides import TidesScraper
+from modules.twin_cipher import TwinHexDecoder, TwinHexEncoder
 from modules.whois import Whois
 from modules.wttr import WeatherFetcher
 
@@ -208,6 +209,21 @@ def message_listener(packet, interface):
                     wantAck=True,
                     destinationId=sender_id,
                 )
+            elif "#twin" in message:
+                message_parts = packet["decoded"]["text"].split(" ")
+                content = " ".join(message_parts[2:])
+                if message_parts[1].lower() == "d":
+                    interface.sendText(
+                        TwinHexDecoder().decrypt(content),
+                        wantAck=True,
+                        destinationId=sender_id,
+                    )
+                else:
+                    interface.sendText(
+                        TwinHexEncoder().encrypt(content),
+                        wantAck=True,
+                        destinationId=sender_id,
+                    )
             elif "#weather" in message:
                 transmission_count += 1
                 interface.sendText(weather_info, wantAck=True, destinationId=sender_id)
