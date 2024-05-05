@@ -88,6 +88,7 @@ MYNODES = ""
 DBFILENAME = ""
 DM_MODE = ""
 FIREWALL = ""
+DUTYCYCLE = ""
 
 with open("settings.yaml", "r") as file:
     settings = yaml.safe_load(file)
@@ -99,7 +100,9 @@ MYNODES = settings.get("MYNODES")
 DBFILENAME = settings.get("DBFILENAME")
 DM_MODE = settings.get("DM_MODE")
 FIREWALL = settings.get("FIREWALL")
+DUTYCYCLE = settings.get("DUTYCYCLE")
 
+logger.info(f"DUTYCYCLE: {DUTYCYCLE}")
 logger.info(f"DM_MODE: {DM_MODE}")
 logger.info(f"FIREWALL: {FIREWALL}")
 # try:
@@ -159,14 +162,16 @@ def message_listener(packet, interface):
     global DBFILENAME
     global DM_MODE
     global FIREWALL
+    global DUTYCYCLE
 
     if packet is not None and packet["decoded"].get("portnum") == "TEXT_MESSAGE_APP":
         message = packet["decoded"]["text"].lower()
         sender_id = packet["from"]
         logger.info(f"Message {packet['decoded']['text']} from {packet['from']}")
         logger.info(f"transmission count {transmission_count}")
+        
         if (
-            transmission_count < 16
+            transmission_count < 16 or DUTYCYCLE == False
             and (DM_MODE == 0 or str(packet["to"]) == MYNODE)
             and (FIREWALL == 0 or any(node in str(packet["from"]) for node in MYNODES))
         ):
@@ -377,7 +382,7 @@ def message_listener(packet, interface):
                     )
                     transmission_count += 1
                     kill_all_robots = 0
-        if transmission_count >= 11:
+        if transmission_count >= 11 and DUTYCYCLE == True:
             if not cooldown:
                 interface.sendText(
                     "❌ Bot has reached duty cycle, entering cool down... ❄",
