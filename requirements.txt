@@ -59,10 +59,6 @@ pycparser==2.21
 pycrypto==2.6.1
 Pygments==2.17.2
 pylint==3.1.0
-pyobjc-core==9.2
-pyobjc-framework-Cocoa==9.2
-pyobjc-framework-CoreBluetooth==9.2
-pyobjc-framework-libdispatch==9.2
 pyparsing==3.1.2
 pypng==0.20220715.0
 Pypubsub==4.0.3
