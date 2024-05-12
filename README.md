@@ -10,7 +10,7 @@ MeshBot is an OpenSource Python program designed to run on computers with a conn
 - Weather updates: Get real-time weather updates for a specified location.
 - Tides information: Receive tidal information for coastal areas.
 - Whois: Query one of two User databases mpowered247 or liamcottle
-- Simple BBS: IN PROGRESS, store and retrieve messages via the bot
+- Simple BBS: Store and retrieve messages via the bot
 
 ## Requirements
 
@@ -66,6 +66,7 @@ MYNODES:
 DBFILENAME: "./db/nodes.db"
 DM_MODE: True
 FIREWALL: True
+DUTYCYCLE: True
 ```
 
 Description
@@ -76,6 +77,7 @@ Description
 - DBFILENAME = Configure which user database file to use by default
 - DM_MODE = True: Only respond to DMs; False: responds to all traffic
 - FIREWALL = True: Only respond to MYNODES; False: responds to all traffic
+- DUTYCYCLE: True: Respect 10% Dutycycle in EU, false to disable for countries without Dutycycle
 
 ## Usage
 
