@@ -8,4 +8,4 @@ MYNODES:
 DBFILENAME: "./db/nodes.db"
 DM_MODE: True
 FIREWALL: True
-DUTYCYCLE: False
+DUTYCYCLE: True
