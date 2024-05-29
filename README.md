@@ -4,12 +4,17 @@
 
 MeshBot is an OpenSource Python program designed to run on computers with a connected Meshtastic device, allowing users to send and receive messages efficiently over a mesh network.
 
+Our Mission: 
+ - To provied low-bandwidth functionality to a low bandwidth mesh.  This has originated in the EU where we have 1x longfast channel, and 10% duty cycle, so we try hard to make this low bandwidth, efficent, purposeful and helpful.  
+ - For those outside of the EU, knock yourselves out, its opensource, modify at will. Just please dont be offended if we reject high bandwidth pull-requests, but we have no issues with extending commands.
+ - As we are open source and an open community, please publish and share your meshtastic work. 
+
 ## Features
 
 - Broadcast messages: Send text broadcasts to all devices on the mesh network.
 - Weather updates: Get real-time weather updates for a specified location.
 - Tides information: Receive tidal information for coastal areas.
-- Whois: Query one of two User databases mpowered247 or liamcottle
+- Whois: Query one of two User databases: mpowered247 or liamcottle
 - Simple BBS: Store and retrieve messages via the bot
 
 ## Requirements
@@ -33,7 +38,6 @@ git clone https://github.com/868meshbot/meshbot.git
 cd meshbot
 python3 -m venv .venv
 . .venv/bin/activate
-
 ```
 
 3. Install the required dependencies:
@@ -46,7 +50,6 @@ pip install -r requirements.txt
 
 ```
 python ./meshbot.py
-
 ```
 
 ## Configuration (NEW)
