@@ -110,6 +110,7 @@ python meshbot.py --port COM7
 You bot will be accessible through the meshtastic mesh network through the node name. DM the bot/node and issue any of the following commands:
 
 - #test : receive a test message
+- #test-detail : as #test above only more detail e.g snr,rssi, hop count (thanks to [rohanki](https://github.com/rohanki))
 - #weather : local weather report
 - #tides : tide info (dont forget to change the default town in the source)
 - #whois #xxxx : retrieve name and node info for a node based on last 4 chars of address
