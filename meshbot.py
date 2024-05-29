@@ -238,6 +238,16 @@ def message_listener(packet, interface):
             elif "#test" in message:
                 transmission_count += 1
                 interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
+            elif "#test-detail" in message:
+                transmission_count += 1
+                testreply = "🟢 ACK."
+                if "hopStart" in packet:
+                    if (packet["hopStart"] - packet["hopLimit"]) == 0:
+                        testreply = testreply + "Received Directly at "
+                    else:
+                        testreply = testreply + "Received from " + str(packet["hopStart"] - packet["hopLimit"]) + "hop(s) away at"
+                testreply = testreply + str(packet["rxRssi"]) + "dB, SNR: " + str(packet["rxSnr"]) + "dB (" + str(int(packet["rxSnr"] + 10 * 5)) + "%)"
+                interface.sendText(testreply, wantAck=True, destinationId=sender_id)
             elif "#whois #" in message:
                 message_parts = message.split("#")
                 transmission_count += 1
