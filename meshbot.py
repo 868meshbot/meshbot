@@ -242,7 +242,6 @@ def message_listener(packet, interface):
             elif "#tst-detail" in message:
                 transmission_count += 1
                 testreply = "🟢 ACK."
-                print(str(packet["hopStart"]))
                 if "hopStart" in packet:
                     if (packet["hopStart"] - packet["hopLimit"]) == 0:
                         testreply += "Received Directly at "
