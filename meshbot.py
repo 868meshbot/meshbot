@@ -50,6 +50,7 @@ import yaml
 
 try:
     import meshtastic.serial_interface
+    import meshtastic.tcp_interface
     from pubsub import pub
 except ImportError:
     print(
@@ -238,15 +239,15 @@ def message_listener(packet, interface):
             elif "#test" in message:
                 transmission_count += 1
                 interface.sendText("🟢 ACK", wantAck=True, destinationId=sender_id)
-            elif "#test-detail" in message:
+            elif "#tst-detail" in message:
                 transmission_count += 1
                 testreply = "🟢 ACK."
                 if "hopStart" in packet:
                     if (packet["hopStart"] - packet["hopLimit"]) == 0:
-                        testreply = testreply + "Received Directly at "
+                        testreply += "Received Directly at "
                     else:
-                        testreply = testreply + "Received from " + str(packet["hopStart"] - packet["hopLimit"]) + "hop(s) away at"
-                testreply = testreply + str(packet["rxRssi"]) + "dB, SNR: " + str(packet["rxSnr"]) + "dB (" + str(int(packet["rxSnr"] + 10 * 5)) + "%)"
+                        testreply += "Received from " + str(packet["hopStart"] - packet["hopLimit"]) + "hop(s) away at"
+                testreply += str(packet["rxRssi"]) + "dB, SNR: " + str(packet["rxSnr"]) + "dB (" + str(int(packet["rxSnr"] + 10 * 5)) + "%)"
                 interface.sendText(testreply, wantAck=True, destinationId=sender_id)
             elif "#whois #" in message:
                 message_parts = message.split("#")
@@ -420,12 +421,17 @@ def main():
     parser = argparse.ArgumentParser(description="Meshbot a bot for Meshtastic devices")
     parser.add_argument("--port", type=str, help="Specify the serial port to probe")
     parser.add_argument("--db", type=str, help="Specify DB: mpowered or liam")
+    parser.add_argument("--host", type=str, help="Specify meshtastic host (IP address) if using API")
 
     args = parser.parse_args()
 
     if args.port:
         serial_ports = [args.port]
         logger.info(f"Serial port {serial_ports}\n")
+    elif args.host:
+        ip_host = args.host
+        print(ip_host)
+        logger.info(f"Meshtastic API host {ip_host}\n")
     else:
         serial_ports = find_serial_ports()
         if serial_ports:
@@ -450,7 +456,11 @@ def main():
         logger.info(f"Default DB: {DBFILENAME}")
 
     logger.info(f"Press CTRL-C x2 to terminate the program")
-    interface = meshtastic.serial_interface.SerialInterface(serial_ports[0])
+
+    if args.host:
+        interface = meshtastic.tcp_interface.TCPInterface(hostname=ip_host,noProto=False)
+    else:
+        interface = meshtastic.serial_interface.SerialInterface(serial_ports[0])
     pub.subscribe(message_listener, "meshtastic.receive")
 
     # Start a separate thread for refreshing data periodically
